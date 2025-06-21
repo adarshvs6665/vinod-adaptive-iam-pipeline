@@ -1,0 +1,26 @@
+service: adaptive-iam-service
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment:
+    BUCKET_NAME: ${self:custom.bucketName}
+
+custom:
+  bucketName: adaptive-iam-artifacts-${sls:stage}
+
+functions:
+  fetchS3:
+    handler: lambda/index.handler
+    events:
+      - http:
+          path: fetch
+          method: get
+
+resources:
+  Resources:
+    AppS3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.bucketName}

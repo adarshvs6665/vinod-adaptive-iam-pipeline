@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  opa:
+    image: openpolicyagent/opa:latest
+    ports:
+      - "8181:8181"
+    volumes:
+      - ./opa:/policies
+    command: ["run", "--server", "/policies/authz.rego"]
+
+  abac:
+    build: ./abac
+    depends_on:
+      - opa
+    network_mode: host
