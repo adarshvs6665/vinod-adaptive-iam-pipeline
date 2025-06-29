@@ -1,3 +1,6 @@
+Week 1
+------
+
 We have created a sample application. its just the boiler plate. code will be updated. the application is inside lambda-app folder
 
 This lambda-app will be deployed using the serverless.yml.
