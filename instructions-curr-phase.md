@@ -22,3 +22,9 @@ Below is the architecture we are planning to implement :
          ↓  
 Allow → [Use AWS STS to Assume Role with Scoped Policy]  
 Deny  → [Log, Block Deployment/Access]  
+
+Week 2
+--------
+Added 'Jenkinsfile'. The jenkins file contain configuration for the pipeline. It will be updated during actual jenkins integration.
+
+Remove comments.
