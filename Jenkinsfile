@@ -2,12 +2,9 @@ pipeline {
   agent any
 
   environment {
-    // This will be generated in runtime 
-    USER_ROLE = "devops"
-    PIPELINE_STAGE = "deploy"
-    ENVIRONMENT = "dev"
-
-    ROLE_ARN = credentials('aws-assumable-role')
+    USER_ROLE = "default"
+    PIPELINE_STAGE = "default"
+    ENVIRONMENT = "default"
     AWS_REGION = 'eu-west-1'
   }
 
@@ -23,6 +20,24 @@ pipeline {
         sh '''
           npm install
         '''
+      }
+    }
+
+    stage('Detect Context') {
+      steps {
+        script {
+          def output = sh(script: 'node scripts/detect-context.js', returnStdout: true).trim()
+          def parsed = readJSON text: output
+
+          env.USER_ROLE = parsed.userRole
+          env.PIPELINE_STAGE = parsed.pipelineStage
+          env.ENVIRONMENT = parsed.environment
+          
+          echo "Context detected:"
+          echo "  USER_ROLE: ${env.USER_ROLE}"
+          echo "  PIPELINE_STAGE: ${env.PIPELINE_STAGE}"
+          echo "  ENVIRONMENT: ${env.ENVIRONMENT}"
+        }
       }
     }
 

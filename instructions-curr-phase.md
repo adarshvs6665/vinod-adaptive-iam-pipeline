@@ -24,7 +24,13 @@ Allow → [Use AWS STS to Assume Role with Scoped Policy]
 Deny  → [Log, Block Deployment/Access]  
 
 Week 2
---------
+------
 Added 'Jenkinsfile'. The jenkins file contain configuration for the pipeline. It will be updated during actual jenkins integration.
 
 Remove comments.
+
+
+
+Week 3
+------
+created the file detect-context.js which is a script that needs to be run during the deployment stage. Using the script we can understand the deployment context. It has info about user role, stage and env. Based on those OPA determines whether to allow or deny the deployment

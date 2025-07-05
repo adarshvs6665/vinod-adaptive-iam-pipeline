@@ -1,6 +1,7 @@
 import AWS from 'aws-sdk';
 import fs from 'fs';
 import * as dotenv from 'dotenv';
+
 dotenv.config();
 
 const sts = new AWS.STS();
