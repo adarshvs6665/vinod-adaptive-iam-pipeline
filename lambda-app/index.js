@@ -2,7 +2,7 @@ const AWS = require('aws-sdk');
 const s3 = new AWS.S3();
 
 exports.handler = async (event) => {
-  console.log("Received event:", JSON.stringify(event, null, 2));
+  console.log("Received event :", JSON.stringify(event, null, 2));
   const params = {
     Bucket: process.env.BUCKET_NAME,
     Key: 'hello.txt'
