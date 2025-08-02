@@ -1,25 +1,22 @@
 const { execSync } = require("child_process");
 
-function getBranch() {
+const runCommand = (command, fallback = "") => {
   try {
-    return execSync("git rev-parse --abbrev-ref HEAD").toString().trim();
+    return execSync(command).toString().replace(/'/g, "").trim();
   } catch {
-    return "unknown";
+    return fallback;
   }
-}
+};
 
-function getEmail() {
-  try {
-    return execSync("git log -1 --pretty=format:'%ae'")
-      .toString()
-      .replace(/'/g, "")
-      .trim();
-  } catch {
-    return "unknown@gmail.com";
-  }
-}
+const getCurrentBranch = () => {
+  return runCommand("git rev-parse --abbrev-ref HEAD", "unknown");
+};
 
-function getRole(email) {
+const getLastCommitterEmail = () => {
+  return runCommand("git log -1 --pretty=format:'%ce'", "unknown@gmail.com");
+};
+
+const getUserRole = (email) => {
   const roleMap = {
     "devops@gmail.com": "devops",
     "qa@gmail.com": "qa",
@@ -27,21 +24,29 @@ function getRole(email) {
   };
 
   return roleMap[email] || "none";
-}
+};
 
-const branch = getBranch();
-const userEmail = getEmail();
-const userRole = getRole(userEmail);
+const getTargetEnvironment = () => {
+  return (process.env.ENVIRONMENT || "dev").toLowerCase();
+};
 
-let pipelineStage = "dev";
+const getDeploymentContext = () => {
+  const branch = getCurrentBranch();
+  const committerEmail = getLastCommitterEmail();
+  const userRole = getUserRole(committerEmail);
+  const environment = getTargetEnvironment();
 
-if (branch === "main") pipelineStage = "deploy";
-else if (branch === "dev") pipelineStage = "test";
-
-console.log(
-  JSON.stringify({
+  return {
+    userEmail: committerEmail,
     userRole,
-    pipelineStage,
-    environment: pipelineStage,
-  })
-);
+    branch,
+    environment,
+  };
+};
+
+const detectContext = () => {
+  const context = getDeploymentContext();
+  console.log(JSON.stringify(context, null, 2));
+};
+
+detectContext();
