@@ -98,7 +98,7 @@ pipeline {
         stage('Assume role') {
             steps {
                 script {
-                    echo '=== Getting Temporary Credentials via AssumeRole ==='
+                    echo "=== Getting Temporary Credentials via AssumeRole ==="
                     echo "Assuming role with dynamic policy for ${env.ENVIRONMENT} environment..."
 
                     // Set AWS region
@@ -106,20 +106,21 @@ pipeline {
                     env.AWS_DEFAULT_REGION = env.AWS_REGION
 
                     // Role ARN to assume
-                    def ROLE_ARN = 'arn:aws:iam::784896966975:role/ServerlessDeploymentRole'
+                    def ROLE_ARN = "arn:aws:iam::784896966975:role/ServerlessDeploymentRole"
 
-                    // Use AWS profile 'vinod' to assume the role
-                    sh """
-                        aws sts assume-role \\
-                            --profile vinod \\
-                            --region "${env.AWS_REGION}" \\
-                            --role-arn "${ROLE_ARN}" \\
-                            --role-session-name "deployment-session-${env.ENVIRONMENT}" \\
-                            --policy file://output/generated-policy.json \\
-                            --duration-seconds 900 > output/assume-role-credentials.json
-                    """
+                    // Use Jenkins AWS credentials
+                    withCredentials([aws(credentialsId: 'aws-credentials', region: env.AWS_REGION)]) {
+                        sh """
+                            aws sts assume-role \\
+                                --region "${env.AWS_REGION}" \\
+                                --role-arn "${ROLE_ARN}" \\
+                                --role-session-name "deployment-session-${env.ENVIRONMENT}" \\
+                                --policy file://output/generated-policy.json \\
+                                --duration-seconds 900 > output/assume-role-credentials.json
+                        """
+                    }
 
-                    echo 'AssumeRole successful'
+                    echo "AssumeRole successful"
 
                     // Extract and configure credentials
                     sh '''
