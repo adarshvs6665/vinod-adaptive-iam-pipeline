@@ -20,5 +20,11 @@
   ],
   "iam": [
     "iam:*"
+  ],
+  "sts": [
+    "sts:*"
+  ],
+  "apigateway": [
+    "apigateway:*"
   ]
 }

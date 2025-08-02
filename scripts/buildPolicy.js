@@ -18,7 +18,9 @@ function detectServicesFromConfig(config) {
 
   // Always include CloudFormation and IAM for serverless deployments
   detectedServices.add("cloudformation");
+  detectedServices.add("apigateway");
   detectedServices.add("iam");
+  detectedServices.add("sts");
 
   // Check for Lambda functions
   if (config.functions && Object.keys(config.functions).length > 0) {
