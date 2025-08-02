@@ -8,7 +8,9 @@ pipeline {
             description: 'Select the deployment environment'
         )
     }
-    
+    tools {
+        nodejs 'nodejs24'
+    }
     environment {
         ENVIRONMENT = "${params.DEPLOYMENT_ENVIRONMENT}"
     }
