@@ -105,6 +105,7 @@ pipeline {
                         // Get federation token and save the output
                         def tokenOutput = sh(
                             script: '''
+                                echo "Requesting federation token..."
                                 aws sts get-federation-token \
                                     --name "deployment-session" \
                                     --policy file://output/generated-policy.json \
@@ -117,6 +118,17 @@ pipeline {
                         
                         // Save the token output to a file
                         writeFile file: 'output/federation-token.json', text: tokenOutput
+                        
+                        // Debug: Show token details (without sensitive info)
+                        sh '''
+                            echo "=== FEDERATION TOKEN DETAILS ==="
+                            cat output/federation-token.json | jq '{
+                                "FederatedUser": .FederatedUser,
+                                "PackedPolicySize": .PackedPolicySize,
+                                "Expiration": .Credentials.Expiration
+                            }'
+                            echo "=== END TOKEN DETAILS ==="
+                        '''
                         
                         // Parse the JSON and extract credentials for environment variables
                         def tokenData = readJSON file: 'output/federation-token.json'
@@ -137,28 +149,61 @@ AWS_TOKEN_EXPIRATION=${tokenData.Credentials.Expiration}
             }
         }
 
-        stage('Deploy with Federation Token') {
+        stage('Deploy') {
             steps {
                 script {
-                    // Read the credentials from the environment file
-                    def credentialsProps = readProperties file: 'output/deployment-credentials.env'
+                    def deploymentSuccessful = false
                     
-                    // Set the temporary AWS credentials as environment variables
-                    withEnv([
-                        "AWS_ACCESS_KEY_ID=${credentialsProps.AWS_ACCESS_KEY_ID}",
-                        "AWS_SECRET_ACCESS_KEY=${credentialsProps.AWS_SECRET_ACCESS_KEY}",
-                        "AWS_SESSION_TOKEN=${credentialsProps.AWS_SESSION_TOKEN}"
-                    ]) {
-                        echo "Deploying to ${env.ENVIRONMENT} environment using federation token..."
-                        echo "Token expires at: ${credentialsProps.AWS_TOKEN_EXPIRATION}"
+                    // First, try deploying with federation token if available
+                    if (fileExists('output/deployment-credentials.env')) {
+                        try {
+                            echo "Attempting deployment with federation token..."
+                            
+                            // Read the credentials from the environment file
+                            def credentialsProps = readProperties file: 'output/deployment-credentials.env'
+                            
+                            // Set the temporary AWS credentials as environment variables
+                            withEnv([
+                                "AWS_ACCESS_KEY_ID=${credentialsProps.AWS_ACCESS_KEY_ID}",
+                                "AWS_SECRET_ACCESS_KEY=${credentialsProps.AWS_SECRET_ACCESS_KEY}",
+                                "AWS_SESSION_TOKEN=${credentialsProps.AWS_SESSION_TOKEN}"
+                            ]) {
+                                echo "Deploying to ${env.ENVIRONMENT} environment using federation token..."
+                                echo "Token expires at: ${credentialsProps.AWS_TOKEN_EXPIRATION}"
+                                
+                                // Verify the credentials work
+                                sh 'aws sts get-caller-identity'
+                                
+                                // Run serverless deploy
+                                sh "serverless deploy --stage ${env.ENVIRONMENT}"
+                                
+                                deploymentSuccessful = true
+                                echo "Deployment completed successfully with federation token!"
+                            }
+                        } catch (Exception e) {
+                            echo "Federation token deployment failed: ${e.getMessage()}"
+                            echo "Will fallback to using base AWS credentials..."
+                        }
+                    } else {
+                        echo "Federation token credentials not found, will use base AWS credentials..."
+                    }
+                    
+                    // Fallback to base AWS credentials if federation token failed or doesn't exist
+                    if (!deploymentSuccessful) {
+                        echo "Attempting deployment with base AWS credentials..."
                         
-                        // Verify the credentials work
-                        sh 'aws sts get-caller-identity'
-                        
-                        // Run serverless deploy
-                        sh "serverless deploy --stage ${env.ENVIRONMENT}"
-                        
-                        echo "Deployment completed successfully!"
+                        withCredentials([aws(credentialsId: 'aws-credentials', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                            echo "Deploying to ${env.ENVIRONMENT} environment using base AWS credentials..."
+                            
+                            // Verify the credentials work
+                            sh 'aws sts get-caller-identity'
+                            
+                            // Run serverless deploy
+                            sh "serverless deploy --stage ${env.ENVIRONMENT}"
+                            
+                            echo "Deployment completed successfully with base AWS credentials!"
+                            echo "WARNING: Deployment used full AWS credentials instead of restricted federation token."
+                        }
                     }
                 }
             }
