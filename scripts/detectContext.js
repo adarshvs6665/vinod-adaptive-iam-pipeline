@@ -1,4 +1,6 @@
 const { execSync } = require("child_process");
+const path = require("path");
+const fs = require("fs");
 
 const runCommand = (command, fallback = "") => {
   try {
@@ -48,7 +50,7 @@ const detectContext = () => {
   const context = getDeploymentContext();
   console.log(JSON.stringify(context, null, 2));
 
-  const outputDir = path.resolve(__dirname, "output");
+  const outputDir = path.resolve(__dirname, "../output");
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
