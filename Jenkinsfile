@@ -62,7 +62,7 @@ pipeline {
             }
         }
 
-        stage('Context Evaluation') {
+        stage('Context evaluation') {
             steps {
                 script {
                     echo "Evaluating deployment context with OPA policy..."
@@ -82,11 +82,101 @@ pipeline {
                 }
             }
         }
+
+        stage('Generate dynamic policy') {
+            steps {
+                script {
+                    sh 'npm run buildPolicy'
+                }
+            }
+        }
+
+        stage('Get Federation Token') {
+            steps {
+                script {
+                    withCredentials([aws(credentialsId: 'aws-credentials', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        echo "Getting federation token with dynamic policy..."
+                        
+                        // Get federation token and save the output
+                        def tokenOutput = sh(
+                            script: '''
+                                aws sts get-federation-token \
+                                    --name "deployment-session" \
+                                    --policy file://output/generated-policy.json \
+                                    --duration-seconds 900
+                            ''',
+                            returnStdout: true
+                        ).trim()
+                        
+                        echo "Federation token obtained successfully"
+                        
+                        // Save the token output to a file
+                        writeFile file: 'output/federation-token.json', text: tokenOutput
+                        
+                        // Parse the JSON and extract credentials for environment variables
+                        def tokenData = readJSON file: 'output/federation-token.json'
+                        
+                        // Write credentials to environment file for next stage
+                        def credentialsEnv = """
+AWS_ACCESS_KEY_ID=${tokenData.Credentials.AccessKeyId}
+AWS_SECRET_ACCESS_KEY=${tokenData.Credentials.SecretAccessKey}
+AWS_SESSION_TOKEN=${tokenData.Credentials.SessionToken}
+AWS_TOKEN_EXPIRATION=${tokenData.Credentials.Expiration}
+                        """.trim()
+                        
+                        writeFile file: 'output/deployment-credentials.env', text: credentialsEnv
+                        
+                        echo "Federation token and credentials saved to output/ folder"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy with Federation Token') {
+            steps {
+                script {
+                    // Read the credentials from the environment file
+                    def credentialsProps = readProperties file: 'output/deployment-credentials.env'
+                    
+                    // Set the temporary AWS credentials as environment variables
+                    withEnv([
+                        "AWS_ACCESS_KEY_ID=${credentialsProps.AWS_ACCESS_KEY_ID}",
+                        "AWS_SECRET_ACCESS_KEY=${credentialsProps.AWS_SECRET_ACCESS_KEY}",
+                        "AWS_SESSION_TOKEN=${credentialsProps.AWS_SESSION_TOKEN}"
+                    ]) {
+                        echo "Deploying to ${env.ENVIRONMENT} environment using federation token..."
+                        echo "Token expires at: ${credentialsProps.AWS_TOKEN_EXPIRATION}"
+                        
+                        // Verify the credentials work
+                        sh 'aws sts get-caller-identity'
+                        
+                        // Run serverless deploy
+                        sh "npx serverless deploy --stage ${env.ENVIRONMENT}"
+                        
+                        echo "Deployment completed successfully!"
+                    }
+                }
+            }
+        }
     }
 
     post {
         always {
             echo "Pipeline completed for environment: ${env.ENVIRONMENT}"
+            
+            // Clean up sensitive files
+            script {
+                sh '''
+                    if [ -f "output/federation-token.json" ]; then
+                        rm -f output/federation-token.json
+                        echo "Cleaned up federation token file"
+                    fi
+                    if [ -f "output/deployment-credentials.env" ]; then
+                        rm -f output/deployment-credentials.env
+                        echo "Cleaned up credentials environment file"
+                    fi
+                '''
+            }
         }
         success {
             echo "Pipeline succeeded"
