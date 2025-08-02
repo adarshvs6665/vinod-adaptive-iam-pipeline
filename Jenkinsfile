@@ -16,7 +16,7 @@ pipeline {
     stages {
         stage('Pull main') {
             steps {
-                git branch: 'main', url: 'https://github.com/adarshvs6665/sreekutty-compliance-guard.git'
+                git branch: 'main', url: 'https://github.com/adarshvs6665/vinod-adaptive-iam-pipeline.git'
             }
         }
         
