@@ -105,7 +105,6 @@ pipeline {
                         // Get federation token and save the output
                         def tokenOutput = sh(
                             script: '''
-                                echo "Requesting federation token..."
                                 aws sts get-federation-token \
                                     --name "deployment-session" \
                                     --policy file://output/generated-policy.json \
@@ -118,17 +117,6 @@ pipeline {
                         
                         // Save the token output to a file
                         writeFile file: 'output/federation-token.json', text: tokenOutput
-                        
-                        // Debug: Show token details (without sensitive info)
-                        sh '''
-                            echo "=== FEDERATION TOKEN DETAILS ==="
-                            cat output/federation-token.json | jq '{
-                                "FederatedUser": .FederatedUser,
-                                "PackedPolicySize": .PackedPolicySize,
-                                "Expiration": .Credentials.Expiration
-                            }'
-                            echo "=== END TOKEN DETAILS ==="
-                        '''
                         
                         // Parse the JSON and extract credentials for environment variables
                         def tokenData = readJSON file: 'output/federation-token.json'
