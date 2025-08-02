@@ -58,7 +58,7 @@ pipeline {
             }
         }
 
-        stage('Detect deployment context') {
+        stage('Extract context') {
             steps {
                 script {
                     sh 'npm run detectContext'
@@ -66,7 +66,7 @@ pipeline {
             }
         }
 
-        stage('Context evaluation') {
+        stage('Evaluate context') {
             steps {
                 script {
                     echo 'Evaluating deployment context with OPA policy...'
@@ -95,11 +95,11 @@ pipeline {
             }
         }
 
-        stage('Assume role') {
+        stage('Generate dynamic permissions') {
             steps {
                 script {
                     echo "=== Getting Temporary Credentials via AssumeRole ==="
-                    echo "Assuming role with dynamic policy for ${env.ENVIRONMENT} environment..."
+                    echo "Assuming role with dynamic policy"
 
                     // Set AWS region
                     env.AWS_REGION = 'us-east-1'
@@ -120,9 +120,8 @@ pipeline {
                         """
                     }
 
-                    echo "AssumeRole successful"
+                    echo "Assume role successful"
 
-                    // Extract and configure credentials
                     sh '''
                         # Extract credentials
                         ACCESS_KEY=$(jq -r '.Credentials.AccessKeyId' output/assume-role-credentials.json)
@@ -171,20 +170,6 @@ pipeline {
     post {
         always {
             echo "Pipeline completed for environment: ${env.ENVIRONMENT}"
-
-            // Clean up sensitive files
-            script {
-                sh '''
-                    if [ -f "output/federation-token.json" ]; then
-                        rm -f output/federation-token.json
-                        echo "Cleaned up federation token file"
-                    fi
-                    if [ -f "output/deployment-credentials.env" ]; then
-                        rm -f output/deployment-credentials.env
-                        echo "Cleaned up credentials environment file"
-                    fi
-                '''
-            }
         }
         success {
             echo 'Pipeline succeeded'
