@@ -35,13 +35,17 @@ pipeline {
                     
                     // Install OPA (Open Policy Agent)
                     sh '''
-                        # Download and install OPA
-                        curl -L -o opa https://openpolicyagent.org/downloads/v0.57.0/opa_linux_amd64_static
-                        chmod 755 ./opa
-                        sudo mv opa /usr/local/bin/
-                        
-                        # Verify OPA installation
-                        opa version
+                        # Download OPA binary
+                        curl -L -o ./opa https://openpolicyagent.org/downloads/latest/opa_linux_amd64
+
+                        # Make it executable
+                        chmod +x ./opa
+
+                        # Optionally add current dir to PATH
+                        export PATH=$PATH:$(pwd)
+
+                        # Verify
+                        ./opa version
                     '''
                 }
             }
