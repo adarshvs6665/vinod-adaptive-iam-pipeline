@@ -3,7 +3,7 @@ pipeline {
     
     parameters {
         choice(
-            name: 'DEPLOYMENT_ENVIRONMENT',
+            name: 'ENVIRONMENT',
             choices: ['dev', 'production'],
             description: 'Select the deployment environment'
         )
@@ -12,7 +12,7 @@ pipeline {
         nodejs 'nodejs'
     }
     environment {
-        ENVIRONMENT = "${params.DEPLOYMENT_ENVIRONMENT}"
+        ENVIRONMENT = "${params.ENVIRONMENT}"
     }
     
     stages {
@@ -55,8 +55,7 @@ pipeline {
         stage('Build DetectContext') {
             steps {
                 script {
-                    // Run build:detectContext command from root
-                    sh 'npm run build:detectContext'
+                    sh 'npm run detectContext'
                 }
             }
         }
@@ -67,10 +66,10 @@ pipeline {
             echo "Pipeline completed for environment: ${env.ENVIRONMENT}"
         }
         success {
-            echo "Pipeline succeeded!"
+            echo "Pipeline succeeded"
         }
         failure {
-            echo "Pipeline failed!"
+            echo "Pipeline failed"
         }
     }
 }

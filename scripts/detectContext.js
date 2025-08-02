@@ -47,6 +47,15 @@ const getDeploymentContext = () => {
 const detectContext = () => {
   const context = getDeploymentContext();
   console.log(JSON.stringify(context, null, 2));
+
+  const outputDir = path.resolve(__dirname, "output");
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
+  const outputPath = path.join(outputDir, "detected-context.json");
+  fs.writeFileSync(outputPath, JSON.stringify(context, null, 2));
+  console.log(`Context saved`);
 };
 
 detectContext();

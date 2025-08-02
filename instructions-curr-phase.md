@@ -38,3 +38,5 @@ created the file detect-context.js which is a script that needs to be run during
 
 
 aws sts get-federation-token   --name "my-session"   --policy file://output/generated-policy.json   --duration-seconds 900   --profile vinod
+
+
