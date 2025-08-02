@@ -1,5 +1,5 @@
 import AWS from 'aws-sdk';
-import fs from 'fs';
+const fs = require('fs');
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -33,5 +33,3 @@ fs.writeFileSync(".env.deployment", `
     AWS_SECRET_ACCESS_KEY=${assumedRole.Credentials.SecretAccessKey}
     AWS_SESSION_TOKEN=${assumedRole.Credentials.SessionToken}
 `);
-
-console.log("Temporary credentials stored in .env.deployment");

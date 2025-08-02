@@ -34,3 +34,7 @@ Remove comments.
 Week 3
 ------
 created the file detect-context.js which is a script that needs to be run during the deployment stage. Using the script we can understand the deployment context. It has info about user role, stage and env. Based on those OPA determines whether to allow or deny the deployment
+
+
+
+aws sts get-federation-token   --name "my-session"   --policy file://output/generated-policy.json   --duration-seconds 900   --profile vinod

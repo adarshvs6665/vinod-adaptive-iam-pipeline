@@ -1,77 +1,69 @@
 pipeline {
     agent any
-    environment {
-        USER_ROLE = 'default'
-        PIPELINE_STAGE = 'default'
-        ENVIRONMENT = 'default'
-        AWS_REGION = 'eu-west-1'
+    
+    parameters {
+        choice(
+            name: 'DEPLOYMENT_ENVIRONMENT',
+            choices: ['dev', 'production'],
+            description: 'Select the deployment environment'
+        )
     }
+    
+    environment {
+        ENVIRONMENT = "${params.DEPLOYMENT_ENVIRONMENT}"
+    }
+    
     stages {
-        stage('Checkout') {
+        stage('Pull main') {
             steps {
-                checkout scm
+                git branch: 'main', url: 'https://github.com/adarshvs6665/sreekutty-compliance-guard.git'
             }
         }
+        
         stage('Install Dependencies') {
             steps {
-                sh '''
-                    npm install
-                '''
-            }
-        }
-        stage('Detect Context') {
-            steps {
                 script {
-                    def output = sh(script: 'node scripts/detect-context.js', returnStdout: true).trim()
-                    def parsed = readJSON text: output
-                    env.USER_ROLE = parsed.userRole
-                    env.PIPELINE_STAGE = parsed.pipelineStage
-                    env.ENVIRONMENT = parsed.environment
-                    echo 'Context detected:'
-                    echo "  USER_ROLE: ${env.USER_ROLE}"
-                    echo "  PIPELINE_STAGE: ${env.PIPELINE_STAGE}"
-                    echo "  ENVIRONMENT: ${env.ENVIRONMENT}"
-                }
-            }
-        }
-        stage('Start OPA (via Docker Compose)') {
-            steps {
-                sh '''
-          docker-compose down || true
-          docker-compose up -d
-          sleep 3
-        '''
-            }
-        }
-        stage('Evaluate Access Policy') {
-            steps {
-                script {
-                    def result = sh(script: 'node scripts/evaluate-policy.js', returnStatus: true)
-                    if (result != 0) {
-                        error('Access denied by OPA. Stopping pipeline.')
+                    // Install npm dependencies in root folder
+                    sh 'npm install'
+                    
+                    // Go inside lambda-app folder and install npm dependencies
+                    dir('lambda-app') {
+                        sh 'npm install'
                     }
+                    
+                    // Install OPA (Open Policy Agent)
+                    sh '''
+                        # Download and install OPA
+                        curl -L -o opa https://openpolicyagent.org/downloads/v0.57.0/opa_linux_amd64_static
+                        chmod 755 ./opa
+                        sudo mv opa /usr/local/bin/
+                        
+                        # Verify OPA installation
+                        opa version
+                    '''
                 }
             }
         }
-        stage('Generate IAM Policy Dynamically') {
+        
+        stage('Build DetectContext') {
             steps {
-                // Step to generate IAM policy based on evaluated OPA policy
-            }
-        }
-        stage('Assume Role with STS') {
-            steps {
-                sh 'node scripts/assume-role.js'
-            }
-        }
-        stage('Deploy to AWS') {
-            steps {
-                // Step to deploy to AWS
+                script {
+                    // Run build:detectContext command from root
+                    sh 'npm run build:detectContext'
+                }
             }
         }
     }
+    
     post {
         always {
-            sh 'docker-compose down || true'
+            echo "Pipeline completed for environment: ${env.ENVIRONMENT}"
+        }
+        success {
+            echo "Pipeline succeeded!"
+        }
+        failure {
+            echo "Pipeline failed!"
         }
     }
 }

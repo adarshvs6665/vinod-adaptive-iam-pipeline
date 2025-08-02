@@ -1,0 +1,15 @@
+{
+  "name": "adaptive-iam-pipeline",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build:policy": "node scripts/buildPolicy.js",
+    "build:detectContext": "node scripts/detectContext.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}

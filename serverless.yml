@@ -12,7 +12,7 @@ custom:
 
 functions:
   fetchS3:
-    handler: lambda/index.handler
+    handler: lambda-app/index.handler
     events:
       - http:
           path: fetch
