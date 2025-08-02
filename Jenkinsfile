@@ -26,6 +26,7 @@ pipeline {
             }
         }
 
+        
         stage('Install Dependencies') {
             steps {
                 script {
@@ -36,6 +37,9 @@ pipeline {
                     dir('lambda-app') {
                         sh 'npm install'
                     }
+
+                    // Install Serverless Framework v3 globally
+                    sh 'npm install -g serverless@3'
 
                     // Check if OPA is already installed in ~/bin, if not download it
                     sh '''
@@ -49,6 +53,7 @@ pipeline {
                         fi
 
                         opa version
+                        serverless --version
                     '''
                 }
             }
@@ -151,7 +156,7 @@ AWS_TOKEN_EXPIRATION=${tokenData.Credentials.Expiration}
                         sh 'aws sts get-caller-identity'
                         
                         // Run serverless deploy
-                        sh "npx serverless deploy --stage ${env.ENVIRONMENT}"
+                        sh "serverless deploy --stage ${env.ENVIRONMENT}"
                         
                         echo "Deployment completed successfully!"
                     }
