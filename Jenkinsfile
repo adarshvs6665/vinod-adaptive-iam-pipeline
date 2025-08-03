@@ -37,14 +37,14 @@ pipeline {
                         sh 'npm install'
                     }
 
-                    // Install Serverless Framework v3 globally
+                    // Install serverless v3 globally
                     sh 'npm install -g serverless@3'
 
                     // Check if OPA is already installed in ~/bin, if not download it
                     sh '''
                         mkdir -p $HOME/bin
                         if ! [ -x "$HOME/bin/opa" ]; then
-                            echo "Downloading OPA to $HOME/bin..."
+                            echo "Downloading OPA to $HOME/bin"
                             curl -L -o $HOME/bin/opa https://openpolicyagent.org/downloads/latest/opa_linux_amd64
                             chmod +x $HOME/bin/opa
                         else
@@ -69,7 +69,7 @@ pipeline {
         stage('Evaluate context') {
             steps {
                 script {
-                    echo 'Evaluating deployment context with OPA policy...'
+                    echo 'Evaluating deployment context with OPA policy'
 
                     def opaResult = sh(
                         script: 'opa eval --data ./rules/deployment.rego --input ./output/detected-context.json --format raw "data.deployment.allow"',
@@ -98,7 +98,7 @@ pipeline {
         stage('Generate dynamic permissions') {
             steps {
                 script {
-                    echo "=== Getting Temporary Credentials via AssumeRole ==="
+                    echo "Getting temporary credentials via AssumeRole"
                     echo "Assuming role with dynamic policy"
 
                     // Set AWS region
@@ -123,7 +123,7 @@ pipeline {
                     echo "Assume role successful"
 
                     sh '''
-                        # Extract credentials
+                        # Extracting credentials
                         ACCESS_KEY=$(jq -r '.Credentials.AccessKeyId' output/assume-role-credentials.json)
                         SECRET_KEY=$(jq -r '.Credentials.SecretAccessKey' output/assume-role-credentials.json)
                         SESSION_TOKEN=$(jq -r '.Credentials.SessionToken' output/assume-role-credentials.json)
@@ -136,7 +136,7 @@ pipeline {
 
                         echo "Token expires at: $EXPIRATION"
 
-                        echo "=== Configuring Temporary AWS Profile ==="
+                        echo "Configuring temporary AWS profile"
                         aws configure set aws_access_key_id "$ACCESS_KEY" --profile "tmp-profile"
                         aws configure set aws_secret_access_key "$SECRET_KEY" --profile "tmp-profile"
                         aws configure set aws_session_token "$SESSION_TOKEN" --profile "tmp-profile"
@@ -144,7 +144,7 @@ pipeline {
 
                         echo "Temporary profile 'tmp-profile' configured successfully"
 
-                        echo "=== Verifying Credentials ==="
+                        echo "Verifying credentials"
                         aws sts get-caller-identity --profile "tmp-profile" --region "$AWS_REGION"
                     '''
                 }
@@ -154,7 +154,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    echo "=== Deploying to ${env.ENVIRONMENT} ==="
+                    echo "Deploying to ${env.ENVIRONMENT}"
 
                     sh """
                         export AWS_PROFILE="tmp-profile"

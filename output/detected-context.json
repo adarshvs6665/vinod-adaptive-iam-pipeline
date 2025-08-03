@@ -1,6 +1,6 @@
 {
-  "userEmail": "devops@gmail.com",
-  "userRole": "devops",
+  "userEmail": "qa@gmail.com",
+  "userRole": "qa",
   "branch": "main",
   "environment": "dev"
 }

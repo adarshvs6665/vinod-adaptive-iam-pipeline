@@ -57,7 +57,7 @@ const detectContext = () => {
 
   const outputPath = path.join(outputDir, "detected-context.json");
   fs.writeFileSync(outputPath, JSON.stringify(context, null, 2));
-  console.log(`Context saved`);
+  console.log(`context saved`);
 };
 
 detectContext();
